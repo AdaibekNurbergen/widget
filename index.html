@@ -1,0 +1,54 @@
+<html>
+<head>
+    <script src="https://api.bitrix24.com/api/v1/"></script>
+</head>
+<body>
+    <div id="deal-info"></div>
+    <script>
+        BX24.init(function(){
+            // Получаем ID сделки из URL
+            var dealId = BX24.placement.info().options.ID;
+
+            // Получаем токен авторизации
+            BX24.callMethod(
+                "app.info",
+                {},
+                function(result)
+                {
+                    if(result.error())
+                        console.error(result.error());
+                    else
+                    {
+                        var authToken = result.data().AUTH_ID;
+
+                        // Выполняем HTTP-запрос для получения данных сделки
+                        fetch(`https://dentapro.bitrix24.kz/rest/crm.deal.get?id=${dealId}&auth=${authToken}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.error) {
+                                    console.error(data.error);
+                                } else {
+                                    var dealData = data.result;
+                                    var phoneNumber = dealData.CONTACT_ID ? dealData.CONTACT_ID.PHONE[0].VALUE : null;
+
+                                    if (phoneNumber) {
+                                        // Выполняем HTTP-запрос к внешнему API с номером телефона
+                                        fetch(`https://api-developer.macdent.kz/patient/find/?phone=${phoneNumber}&access_token=488:huOTWx5yovGFxDE50kmeLZiiLpU2G2Q6wJxo7b1DYIPB0nYzRXyByMdDGwTzWwdwW7XOYi33HYl7wBcg58UwdciFfVtjjM8ue8swyZKbrkeSdOxtkEyuR6g5`)
+                                            .then(response => response.json())
+                                            .then(patientData => {
+                                                document.getElementById("deal-info").innerText = JSON.stringify(patientData, null, 2);
+                                            })
+                                            .catch(error => console.error('Error:', error));
+                                    } else {
+                                        console.error('Phone number not found');
+                                    }
+                                }
+                            })
+                            .catch(error => console.error('Error:', error));
+                    }
+                }
+            );
+        });
+    </script>
+</body>
+</html>
